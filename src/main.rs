@@ -21,45 +21,65 @@ fn main() {
     let img_width = 600;
     let img_height = 600; 
     let fov = 90.0;
-    let mut cam_orig = Vec3::new(1.3, 1.0, -1.0);
+    let mut cam_orig = Vec3::new(0.0, 0.0, -2.0);
+    let mut rot = Vec3::new(0.0, 0.0, 0.0);
 
     let aspect_ratio = img_width as f64 / img_height as f64;
     let inv_width = 1.0 / img_width as f64;
     let inv_height = 1.0 / img_height as f64;
     let view_angle = (PI * 0.5 * fov / 180.0).tan();
+    let mut fwd = Vec3::new(0.0, 0.0, 0.0);
 
     let mut buffer: Vec<u32> = vec![0; img_width * img_height];
     let mut window = Window::new("Raymarcher thing", img_width, img_height, WindowOptions::default()).unwrap();
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        if window.is_key_down(Key::W) {
-            cam_orig.z += 0.1;
-        }
+        window.get_keys().map(|keys| {
+            for t in keys {
+                match t {
+                    Key::W => cam_orig = &cam_orig + &fwd * 0.1,
+                    Key::S => cam_orig = &cam_orig - &fwd * 0.1,
+                    Key::Q => cam_orig.y += 0.1,
+                    Key::E => cam_orig.y -= 0.1,
+
+                    Key::Left => rot.y -= 0.1,
+                    Key::Right => rot.y += 0.1,
+                    Key::Up => rot.x -= 0.1,
+                    Key::Down => rot.x += 0.1,
+
+                    _ => (),
+                }
+            }
+        });
 
         for x in 0..img_width {
             for y in 0..img_height {
-                //let far_x = (2.0 * ((x as f64 + 0.5) / img_width as f64) - 1.0) * (fov / 2.0 * PI / 180.0).tan() * aspect_ratio; 
-                //let far_y = (1.0 - 2.0 * ((y as f64 + 0.5) / img_height as f64)) * (fov / 2.0 * PI / 180.0).tan(); 
-                
-
                 let mut ray_dir = Vec3::new(
                     (2.0 * (x as f64 * inv_width) - 1.0) * view_angle * aspect_ratio, 
                     (1.0 - 2.0 * (y as f64 * inv_height)) * view_angle, 
                     1.0).normalize();
 
                 //Rotate, temporary till i implement matrices
-                let y_rot: f64 = -PI / 4.0;
-                ray_dir = Vec3::new(
-                    ray_dir.x * y_rot.cos() + ray_dir.z * y_rot.sin(),
-                    ray_dir.y,
-                    -ray_dir.x * y_rot.sin() + ray_dir.z * y_rot.cos()
-                );
-                let x_rot: f64 = PI / 4.0;
                 ray_dir = Vec3::new(
                     ray_dir.x,
-                    ray_dir.y * x_rot.cos() - ray_dir.z * x_rot.sin(),
-                    ray_dir.y * x_rot.sin() + ray_dir.z * x_rot.cos()
+                    ray_dir.y * rot.x.cos() - ray_dir.z * rot.x.sin(),
+                    ray_dir.y * rot.x.sin() + ray_dir.z * rot.x.cos()
                 );
+                ray_dir = Vec3::new(
+                    ray_dir.x * rot.y.cos() + ray_dir.z * rot.y.sin(),
+                    ray_dir.y,
+                    -ray_dir.x * rot.y.sin() + ray_dir.z * rot.y.cos()
+                );
+                ray_dir = Vec3::new(
+                    ray_dir.x * rot.z.cos() - ray_dir.y * rot.z.sin(),
+                    ray_dir.x * rot.z.sin() + ray_dir.y * rot.z.cos(),
+                    ray_dir.z
+                );
+
+                //UGLY HACK, REFACTOR
+                if x == img_width / 2 && y == img_height / 2 {
+                    fwd = ray_dir.clone();
+                }
 
                 buffer[y*img_width+x] = trace(&cam_orig, &ray_dir);
             }
