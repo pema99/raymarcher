@@ -1,6 +1,6 @@
 use std::ops;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Vec3 {
     pub x: f64,
     pub y: f64,
@@ -34,27 +34,15 @@ impl Vec3 {
 
     pub fn normalize(&self) -> Self {
         let mag = self.magnitude();
-        Self {
-            x: self.x / mag,
-            y: self.y / mag,
-            z: self.z / mag
-        }
+        self.apply(&|i| i / mag)
     }
 
     pub fn max(&self, val: f64) -> Self {
-        Self {
-            x: self.x.max(val),
-            y: self.y.max(val),
-            z: self.z.max(val)
-        }
+        self.apply(&|i| i.max(val))
     }
 
     pub fn min(&self, val: f64) -> Self {
-        Self {
-            x: self.x.min(val),
-            y: self.y.min(val),
-            z: self.z.min(val)
-        }
+        self.apply(&|i| i.min(val))
     }
 
     pub fn abs(&self) -> Vec3 {
@@ -67,5 +55,13 @@ impl Vec3 {
             y: fun(self.y),
             z: fun(self.z)
         }
+    }
+
+    pub fn to_color(&self) -> u32 {
+        let r = (self.x * 255.0) as u32;
+        let g = (self.y * 255.0) as u32;
+        let b = (self.z * 255.0) as u32;
+
+        b | (g << 8) | (r << 16) | (255 << 24)
     }
 }
