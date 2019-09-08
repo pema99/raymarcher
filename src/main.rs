@@ -2,10 +2,13 @@
 mod raymarcher;
 use raymarcher::Vec3;
 
-#[macro_use] extern crate impl_ops;
 use std::f64::consts::PI;
+
+#[macro_use] extern crate impl_ops;
 extern crate minifb;
 use minifb::{Key, WindowOptions, Window};
+extern crate rayon;
+use rayon::prelude::*;
 
 impl Vec3 {
     fn to_color(&self) -> u32 {
@@ -28,7 +31,6 @@ fn main() {
     let inv_width = 1.0 / img_width as f64;
     let inv_height = 1.0 / img_height as f64;
     let view_angle = (PI * 0.5 * fov / 180.0).tan();
-    let mut fwd = Vec3::new(0.0, 0.0, 0.0);
 
     let mut buffer: Vec<u32> = vec![0; img_width * img_height];
     let mut window = Window::new("Raymarcher thing", img_width, img_height, WindowOptions::default()).unwrap();
@@ -37,8 +39,10 @@ fn main() {
         window.get_keys().map(|keys| {
             for t in keys {
                 match t {
-                    Key::W => cam_orig = &cam_orig + &fwd * 0.1,
-                    Key::S => cam_orig = &cam_orig - &fwd * 0.1,
+                    Key::W => cam_orig.z += 0.1,
+                    Key::S => cam_orig.z -= 0.1,
+                    Key::A => cam_orig.x -= 0.1,
+                    Key::D => cam_orig.x += 0.1,
                     Key::Q => cam_orig.y += 0.1,
                     Key::E => cam_orig.y -= 0.1,
 
@@ -52,8 +56,10 @@ fn main() {
             }
         });
 
-        for x in 0..img_width {
-            for y in 0..img_height {
+        //Yield scanlines, build frame
+        let frame = (0..img_height).into_par_iter().map(|y| {
+            //Yield pixels, build scanlines
+            (0..img_width).into_par_iter().map(|x| {         
                 let mut ray_dir = Vec3::new(
                     (2.0 * (x as f64 * inv_width) - 1.0) * view_angle * aspect_ratio, 
                     (1.0 - 2.0 * (y as f64 * inv_height)) * view_angle, 
@@ -75,31 +81,29 @@ fn main() {
                     ray_dir.x * rot.z.sin() + ray_dir.y * rot.z.cos(),
                     ray_dir.z
                 );
+                
+                trace(&cam_orig, &ray_dir)       
+            }).collect::<Vec<_>>()
+        }).collect::<Vec<_>>();
 
-                //UGLY HACK, REFACTOR
-                if x == img_width / 2 && y == img_height / 2 {
-                    fwd = ray_dir.clone();
-                }
-
-                buffer[y*img_width+x] = trace(&cam_orig, &ray_dir);
+        for (y, scanline) in frame.iter().enumerate() {
+            for (x, pix) in scanline.iter().enumerate() {
+                buffer[y*img_width+x] = *pix;     
             }
         }
 
         window.update_with_buffer(&buffer).unwrap();
     }
-
-    //img.save("epic.png");
 }
 
 fn trace(orig: &Vec3, dir: &Vec3) -> u32 {
-    let max_steps = 100;
-    let max_dist = 100.0;
+    let max_dist = 30.0;
     let epsilon = 0.001;
 
     let mut depth = 0.0;
     let mut hit = false;
     
-    for i in 0..max_steps {
+    loop {
         let dist = scene_sdf(orig + dir * depth);
         
         if dist.abs() < epsilon {        
