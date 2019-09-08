@@ -101,9 +101,7 @@ fn trace(orig: &Vec3, dir: &Vec3) -> u32 {
         let dist = scene_sdf(orig + dir * depth);
 
         if dist.abs() < EPSILON {
-            return sdf_normal(orig + dir * depth)
-                .apply(&|v: f64| v / 2.0 + 0.5)
-                .to_color();
+            return sdf_normal(orig + dir * depth).apply(&|v: f64| v / 2.0 + 0.5).to_color();
         }
 
         depth += dist;
@@ -165,12 +163,8 @@ fn scene_sdf(from: Vec3) -> f64 {
 
 fn sdf_normal(p: Vec3) -> Vec3 {
     Vec3::new(
-        scene_sdf(Vec3::new(p.x + EPSILON, p.y, p.z))
-            - scene_sdf(Vec3::new(p.x - EPSILON, p.y, p.z)),
-        scene_sdf(Vec3::new(p.x, p.y + EPSILON, p.z))
-            - scene_sdf(Vec3::new(p.x, p.y - EPSILON, p.z)),
-        scene_sdf(Vec3::new(p.x, p.y, p.z + EPSILON))
-            - scene_sdf(Vec3::new(p.x, p.y, p.z - EPSILON)),
-    )
-    .normalize()
+        scene_sdf(Vec3::new(p.x + EPSILON, p.y, p.z)) - scene_sdf(Vec3::new(p.x - EPSILON, p.y, p.z)),
+        scene_sdf(Vec3::new(p.x, p.y + EPSILON, p.z)) - scene_sdf(Vec3::new(p.x, p.y - EPSILON, p.z)),
+        scene_sdf(Vec3::new(p.x, p.y, p.z + EPSILON)) - scene_sdf(Vec3::new(p.x, p.y, p.z - EPSILON)),
+    ).normalize()
 }
