@@ -33,7 +33,7 @@ pub struct Cube {
 impl Cube {
 	pub fn new(center: Vec3, size: Vec3) -> Self {
 		Self {
-    		center: center,
+			center: center,
 			size: size
 		}
 	}
@@ -75,13 +75,13 @@ impl CSG {
 impl DistanceField for CSG {
 	fn sdf(&self, from: &Vec3) -> f64 {
 		match self.op {
-    		CSGOperator::Union => self.a.sdf(&from).min(self.b.sdf(&from)),
-    		CSGOperator::Intersect => self.a.sdf(&from).max(self.b.sdf(&from)),
-    		CSGOperator::Difference => self.a.sdf(&from).max(-self.b.sdf(&from)),
-    		CSGOperator::UnionSmooth(k) => min_smooth(self.a.sdf(&from), self.b.sdf(&from), k),
+			CSGOperator::Union => self.a.sdf(&from).min(self.b.sdf(&from)),
+			CSGOperator::Intersect => self.a.sdf(&from).max(self.b.sdf(&from)),
+			CSGOperator::Difference => self.a.sdf(&from).max(-self.b.sdf(&from)),
+			CSGOperator::UnionSmooth(k) => min_smooth(self.a.sdf(&from), self.b.sdf(&from), k),
 			CSGOperator::IntersectSmooth(k) => max_smooth(self.a.sdf(&from), self.b.sdf(&from), k),
 			CSGOperator::DifferenceSmooth(k) => difference_smooth(self.a.sdf(&from), self.b.sdf(&from), k),
-    		_ => 0.0
+			_ => 0.0
 		}
 	}
 }
