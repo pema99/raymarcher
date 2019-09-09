@@ -95,13 +95,27 @@ fn main() {
 //Trace a primary ray, return color
 fn trace(orig: &Vec3, dir: &Vec3) -> u32 {
     let mut depth = 0.0;
-    let mut hit = false;
 
     loop {
         let dist = scene_sdf(orig + dir * depth);
 
         if dist.abs() < EPSILON {
-            return sdf_normal(orig + dir * depth).apply(&|v: f64| v / 2.0 + 0.5).to_color();
+            //return sdf_normal(orig + dir * depth).apply(&|v: f64| v / 2.0 + 0.5).to_color();
+
+            //Phong shading
+            let hit = orig + dir * depth;
+            let normal = sdf_normal(hit);
+
+            let light_source = Vec3::new(-1.0, 5.0, -2.0);          
+
+            let light_dir = (light_source - hit).normalize();
+            let diff = normal.dot(&light_dir).max(0.0);
+
+            let view_dir = (orig - hit).normalize();
+            let reflect_dir = (-light_dir).reflect(&normal);
+            let spec = view_dir.dot(&reflect_dir).max(0.0).powf(32.0);
+
+            return ((diff + spec + 0.05).min(1.0) * Vec3::new(1.0, 0.5, 0.5)).to_color();
         }
 
         depth += dist;

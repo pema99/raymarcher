@@ -7,18 +7,6 @@ pub struct Vec3 {
     pub z: f64
 }
 
-impl_op_ex!(+ |a: &Vec3, b: &Vec3| -> Vec3 { 
-    Vec3::new(a.x + b.x, a.y + b.y, a.z + b.z)
-});
-
-impl_op_ex!(- |a: &Vec3, b: &Vec3| -> Vec3 { 
-    Vec3::new(a.x - b.x, a.y - b.y, a.z - b.z)
-});
-
-impl_op_ex!(* |a: &Vec3, b: &f64| -> Vec3 { 
-    Vec3::new(a.x * b, a.y * b, a.z * b)
-});
-
 impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self {
@@ -35,6 +23,15 @@ impl Vec3 {
     pub fn normalize(&self) -> Self {
         let mag = self.magnitude();
         self.apply(&|i| i / mag)
+    }
+
+    pub fn dot(&self, other: &Vec3) -> f64 {
+        self.x*other.x + self.y*other.y + self.z*other.z
+    }
+
+    pub fn reflect(&self, normal: &Vec3) -> Vec3 {
+        let dot_prod = self.dot(normal);
+        self - (2.0 * normal) * dot_prod
     }
 
     pub fn max(&self, val: f64) -> Self {
@@ -65,3 +62,23 @@ impl Vec3 {
         b | (g << 8) | (r << 16) | (255 << 24)
     }
 }
+
+impl_op_ex!(+ |a: &Vec3, b: &Vec3| -> Vec3 { 
+    Vec3::new(a.x + b.x, a.y + b.y, a.z + b.z)
+});
+
+impl_op_ex!(- |a: &Vec3, b: &Vec3| -> Vec3 { 
+    Vec3::new(a.x - b.x, a.y - b.y, a.z - b.z)
+});
+
+impl_op_ex_commutative!(* |a: &Vec3, b: &f64| -> Vec3 { 
+    Vec3::new(a.x * b, a.y * b, a.z * b)
+});
+
+impl_op!(- |a: &Vec3| -> Vec3 { 
+    Vec3::new(-a.x, -a.y, -a.z)
+});
+
+impl_op!(- |a: Vec3| -> Vec3 { 
+    Vec3::new(-a.x, -a.y, -a.z)
+});
