@@ -1,9 +1,8 @@
 use super::shapes::DistanceField;
 use super::Vec3;
-use super::EPSILON;
 
 pub struct Scene {
-	pub shapes: Vec<Box<DistanceField + Sync>>
+	pub shapes: Vec<Box<dyn DistanceField + Sync>>
 }
 
 impl DistanceField for Scene {
@@ -16,16 +15,6 @@ impl DistanceField for Scene {
 			}
 		}
 		min
-	}
-}
-
-impl Scene {
-	pub fn sdf_normal(&self, p: Vec3) -> Vec3 {
-		Vec3::new(
-			self.sdf(&Vec3::new(p.x + EPSILON, p.y, p.z)) - self.sdf(&Vec3::new(p.x - EPSILON, p.y, p.z)),
-			self.sdf(&Vec3::new(p.x, p.y + EPSILON, p.z)) - self.sdf(&Vec3::new(p.x, p.y - EPSILON, p.z)),
-			self.sdf(&Vec3::new(p.x, p.y, p.z + EPSILON)) - self.sdf(&Vec3::new(p.x, p.y, p.z - EPSILON)),
-		).normalize()
 	}
 }
 

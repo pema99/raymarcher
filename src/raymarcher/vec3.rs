@@ -1,6 +1,6 @@
 use std::ops;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct Vec3 {
     pub x: f64,
     pub y: f64,
@@ -73,6 +73,10 @@ impl_op_ex!(- |a: &Vec3, b: &Vec3| -> Vec3 {
 
 impl_op_ex_commutative!(* |a: &Vec3, b: &f64| -> Vec3 { 
     Vec3::new(a.x * b, a.y * b, a.z * b)
+});
+
+impl_op_ex!(/ |a: &Vec3, b: &f64| -> Vec3 { 
+    Vec3::new(a.x / b, a.y / b, a.z / b)
 });
 
 impl_op!(- |a: &Vec3| -> Vec3 { 

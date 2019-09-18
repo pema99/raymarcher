@@ -21,16 +21,23 @@ const FOV: f64 = 90.0;
 fn main() {
 	let scene = Scene {
 		shapes: vec![
-			Box::new(
-				CSG::new(CSGOperator::UnionSmooth(0.1),
-				Box::new(Cube::new(Vec3::new(0.0, -0.5, 0.0), Vec3::new(0.5, 0.5, 0.5))),
-				Box::new(Sphere::new(Vec3::new(0.0, 0.4, 0.0), 0.7))
-			)),
+            CSG::new(
+                CSGOperator::UnionSmooth(0.25),
+                Transform::new(
+                    Cube::new(
+                        Vec3::new(1.0, 1.0, 1.0)
+                    ),
+                    Mat4::translate(&Vec3::new(0.0, 1.0, 1.2)) * Mat4::rotate_y(1.0)
+                ),
+                Cube::new(
+                    Vec3::new(1.0, 1.0, 1.0)
+                )
+            )
 		]
 	};
 
 	//Mutable variables
-	let mut cam_orig = Vec3::new(0.0, 0.0, -2.0);
+	let mut cam_orig = Vec3::new(0.0, 1.0, -2.0);
 	let mut cam_rot = Vec3::new(0.0, 0.0, 0.0);
 
 	//Precalced variables
@@ -110,7 +117,7 @@ fn trace(scene: &Scene, orig: &Vec3, dir: &Vec3) -> u32 {
 		let dist = scene.sdf(&(orig + dir * depth));
 
 		if dist.abs() < EPSILON {
-			//return sdf_normal(orig + dir * depth).apply(&|v: f64| v / 2.0 + 0.5).to_color();
+			//return scene.sdf_normal(orig + dir * depth).apply(&|v: f64| v / 2.0 + 0.5).to_color();
 
 			//Phong shading
 			let hit = orig + dir * depth;
