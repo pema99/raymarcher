@@ -131,9 +131,9 @@ impl DomainRepetition {
 impl DistanceField for DomainRepetition {
 	fn sdf(&self, from: &Vec3) -> f64 {
 		let trans = Vec3::new(
-    		from.x % self.offset.x,
-    		from.y % self.offset.y,
-    		from.z % self.offset.z)
+    		from.x.abs() % self.offset.x,
+    		from.y.abs() % self.offset.y,
+    		from.z.abs() % self.offset.z)
     		- 0.5 * self.offset;
     	self.a.sdf(&trans)
 	}

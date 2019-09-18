@@ -80,6 +80,71 @@ impl Mat4 {
 		}
 	}
 
+    //This spaghetti is rewritten from monogame source, 
+    //I cba. to learn efficient matrix inversion 
+    pub fn invert(&self) -> Self {
+        let mut result = Mat4::new([0.0; 16]);
+
+        let num1 = self.get_elem(0, 0);
+	    let num2 = self.get_elem(1, 0);
+	    let num3 = self.get_elem(2, 0);
+	    let num4 = self.get_elem(3, 0);
+	    let num5 = self.get_elem(0, 1);
+	    let num6 = self.get_elem(1, 1);
+	    let num7 = self.get_elem(2, 1);
+	    let num8 = self.get_elem(3, 1);
+	    let num9 = self.get_elem(0, 2);
+	    let num10 = self.get_elem(1, 2);
+	    let num11 = self.get_elem(2, 2);
+	    let num12 = self.get_elem(3, 2);
+	    let num13 = self.get_elem(0, 3);
+	    let num14 = self.get_elem(1, 3);
+	    let num15 = self.get_elem(2, 3);
+	    let num16 = self.get_elem(3 , 3);
+	    let num17 = num11 * num16 - num12 * num15;
+	    let num18 = num10 * num16 - num12 * num14;
+	    let num19 = num10 * num15 - num11 * num14;
+	    let num20 = num9 * num16 - num12 * num13;
+	    let num21 = num9 * num15 - num11 * num13;
+	    let num22 = num9 * num14 - num10 * num13;
+	    let num23 = num6 *  num17 - num7 * num18 + num8 * num19;
+	    let num24 = -(num5 * num17 - num7 * num20 + num8 * num21);
+	    let num25 = num5 * num18 - num6 * num20 + num8 * num22;
+	    let num26 = -(num5 * num19 - num6 * num21 + num7 * num22);
+	    let num27 = 1.0 / ( num1 * num23 + num2 * num24 + num3 * num25 + num4 * num26);
+    
+	    result.set_elem(0, 0, num23 * num27);
+	    result.set_elem(0, 1, num24 * num27);
+	    result.set_elem(0, 2, num25 * num27);
+	    result.set_elem(0, 3, num26 * num27);
+	    result.set_elem(1, 0, -(num2 * num17 - num3 * num18 + num4 * num19) * num27);
+	    result.set_elem(1, 1, (num1 * num17 - num3 * num20 + num4 * num21) * num27);
+	    result.set_elem(1, 2, -(num1 * num18 - num2 * num20 + num4 * num22) * num27);
+	    result.set_elem(1, 3, (num1 * num19 - num2 * num21 + num3 * num22) * num27);
+	    let num28 = num7 * num16 - num8 * num15;
+	    let num29 = num6 * num16 - num8 * num14;
+	    let num30 = num6 * num15 - num7 * num14;
+	    let num31 = num5 * num16 - num8 * num13;
+	    let num32 = num5 * num15 - num7 * num13;
+	    let num33 = num5 * num14 - num6 * num13;
+	    result.set_elem(2, 0, (num2 * num28 - num3 * num29 + num4 * num30) * num27);
+	    result.set_elem(2, 1, -(num1 * num28 - num3 * num31 + num4 * num32) * num27);
+	    result.set_elem(2, 2, (num1 * num29 - num2 * num31 + num4 * num33) * num27);
+	    result.set_elem(2, 3, -(num1 * num30 - num2 * num32 + num3 * num33) * num27);
+	    let num34 = num7 * num12 - num8 * num11;
+	    let num35 = num6 * num12 - num8 * num10;
+	    let num36 = num6 * num11 - num7 * num10;
+	    let num37 = num5 * num12 - num8 * num9;
+	    let num38 = num5 * num11 - num7 * num9;
+	    let num39 = num5 * num10 - num6 * num9;
+	    result.set_elem(3, 0, -(num2 * num34 - num3 * num35 + num4 * num36) * num27);
+	    result.set_elem(3, 1, (num1 * num34 - num3 * num37 + num4 * num38) * num27);
+	    result.set_elem(3, 2, -(num1 * num35 - num2 * num37 + num4 * num39) * num27);
+	    result.set_elem(3, 3, (num1 * num36 - num2 * num38 + num3 * num39) * num27);
+
+        result
+    }
+
 	//Indexing
 	pub fn get_elem(&self, x: usize, y: usize) -> f64 {
 		self.data[y * 4 + x]

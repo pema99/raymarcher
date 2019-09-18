@@ -21,19 +21,16 @@ const FOV: f64 = 90.0;
 fn main() {
 	let scene = Scene {
 		shapes: vec![
-			/*Box::new(CSG::new(
-    			CSGOperator::DifferenceSmooth(0.1),
-				Box::new(Plane::new(Vec3::new(0.0, 0.1, 0.0), Vec3::new(0.0, 1.0, 0.0))),
-				//Box::new(Cube::new(Vec3::new(0.0, -0.5, 0.0), Vec3::new(0.5, 0.5, 0.5))),
-				//
+			Box::new(CSG::new(
+				CSGOperator::Intersect,
+				Box::new(Cube::new(
+					Vec3::new(0.0, 0.0, 0.0),
+					Vec3::new(5.0, 5.0, 5.0)
+				)),
 				Box::new(DomainRepetition::new(
-    				Box::new(Sphere::new(Vec3::new(0.0, 0.4, 0.0), 0.7)), Vec3::new(0.5, 0.5, 0.5))
-    			)
-			))*/
-			
-			Box::new(DomainRepetition::new(
-				Box::new(Sphere::new(Vec3::new(0.0, -2.0, 0.0), 0.5)),
-				Vec3::new(2.0, 2.0, 2.0)
+					Box::new(Sphere::new(Vec3::new(0.0, 0.0, 0.0), 0.5)),
+					Vec3::new(2.0, 2.0, 2.0)
+				))
 			))
 		]
 	};
