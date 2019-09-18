@@ -100,7 +100,7 @@ impl Mat4 {
 	    let num13 = self.get_elem(0, 3);
 	    let num14 = self.get_elem(1, 3);
 	    let num15 = self.get_elem(2, 3);
-	    let num16 = self.get_elem(3 , 3);
+	    let num16 = self.get_elem(3, 3);
 	    let num17 = num11 * num16 - num12 * num15;
 	    let num18 = num10 * num16 - num12 * num14;
 	    let num19 = num10 * num15 - num11 * num14;

@@ -7,4 +7,3 @@ pub use mat4::Mat4;
 pub use vec3::Vec3;
 pub use shapes::*;
 pub use scene::*;
-pub const EPSILON: f64 = 0.001;

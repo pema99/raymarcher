@@ -75,6 +75,10 @@ impl_op_ex_commutative!(* |a: &Vec3, b: &f64| -> Vec3 {
     Vec3::new(a.x * b, a.y * b, a.z * b)
 });
 
+impl_op_ex!(/ |a: &Vec3, b: &f64| -> Vec3 { 
+    Vec3::new(a.x / b, a.y / b, a.z / b)
+});
+
 impl_op!(- |a: &Vec3| -> Vec3 { 
     Vec3::new(-a.x, -a.y, -a.z)
 });

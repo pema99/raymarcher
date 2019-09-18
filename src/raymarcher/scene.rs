@@ -1,6 +1,5 @@
 use super::shapes::DistanceField;
 use super::Vec3;
-use super::EPSILON;
 
 pub struct Scene {
 	pub shapes: Vec<Box<dyn DistanceField + Sync>>

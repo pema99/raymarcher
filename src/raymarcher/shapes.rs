@@ -1,6 +1,7 @@
 use super::math::*;
 use super::Vec3;
-use super::EPSILON;
+use super::Mat4;
+const EPSILON: f64 = 0.00001;
 
 pub trait DistanceField{
 	fn sdf(&self, from: &Vec3) -> f64;
@@ -14,64 +15,58 @@ pub trait DistanceField{
 }
 
 pub struct Sphere {
-	center: Vec3,
 	radius: f64
 }
 
 impl Sphere {
-	pub fn new(center: Vec3, radius: f64) -> Self {
-		Self {
-			center: center,
+	pub fn new(radius: f64) -> Box<Self> {
+		Box::new(Self {
 			radius: radius
-		}
+		})
 	}
 }
 
 impl DistanceField for Sphere {
 	fn sdf(&self, from: &Vec3) -> f64 {
-		(from - self.center).magnitude() - self.radius
+		from.magnitude() - self.radius
 	}
 }
 
 pub struct Cube {
-	center: Vec3,
 	size: Vec3
 }
 
 impl Cube {
-	pub fn new(center: Vec3, size: Vec3) -> Self {
-		Self {
-			center: center,
+	pub fn new(size: Vec3) -> Box<Self> {
+		Box::new(Self {
 			size: size
-		}
+		})
 	}
 }
 
 impl DistanceField for Cube {
 	fn sdf(&self, from: &Vec3) -> f64 {
-		let diff = (from - self.center).abs() - self.size;
+		let diff = from.abs() - self.size;
 		diff.max(0.0).magnitude()
 		// + diff.x.max(diff.y.max(diff.z)).min(0.0)
 	}
 }
 
 pub struct Plane {
-	center: Vec3,
 	normal: Vec3
 }
 
 impl Plane {
-	pub fn new(center: Vec3, normal: Vec3) -> Self {
-		Self {
-			center: center,
+	pub fn new(normal: Vec3) -> Box<Self> {
+		Box::new(Self {
 			normal: normal
-		}
+		})
 	}
 }
 
 impl DistanceField for Plane {
 	fn sdf(&self, from: &Vec3) -> f64 {
-		(from - self.center).dot(&self.normal)
+		from.dot(&self.normal)
 	}
 }
 
@@ -91,12 +86,12 @@ pub struct CSG {
 }
 
 impl CSG {
-	pub fn new(op: CSGOperator, a: Box<dyn DistanceField + Sync>, b: Box<dyn DistanceField + Sync>) -> Self {
-		Self {
+	pub fn new(op: CSGOperator, a: Box<dyn DistanceField + Sync>, b: Box<dyn DistanceField + Sync>) -> Box<Self> {
+		Box::new(Self {
 			a: a,
 			b: b,
 			op: op
-		}
+		})
 	}
 }
 
@@ -114,17 +109,57 @@ impl DistanceField for CSG {
 	}
 }
 
+pub struct Transform {
+    a: Box<dyn DistanceField + Sync>,
+	transform: Mat4
+}
+
+impl Transform {
+	pub fn new(a: Box<dyn DistanceField + Sync>, transform: Mat4) -> Box<Self> {
+		Box::new(Self {
+			a: a,
+			transform: transform.invert()
+		})
+	}
+}
+
+impl DistanceField for Transform {
+	fn sdf(&self, from: &Vec3) -> f64 {
+        self.a.sdf(&(self.transform * from))
+	}
+}
+
+pub struct Scale {
+    a: Box<dyn DistanceField + Sync>,
+	factor: f64
+}
+
+impl Scale {
+	pub fn new(a: Box<dyn DistanceField + Sync>, factor: f64) -> Box<Self> {
+		Box::new(Self {
+			a: a,
+			factor: factor
+		})
+	}
+}
+
+impl DistanceField for Scale {
+	fn sdf(&self, from: &Vec3) -> f64 {
+        self.a.sdf(&(from / self.factor)) * self.factor
+	}
+}
+
 pub struct DomainRepetition {
 	a: Box<dyn DistanceField + Sync>,
 	offset: Vec3
 }
 
 impl DomainRepetition {
-	pub fn new(a: Box<dyn DistanceField + Sync>, offset: Vec3) -> Self {
-		Self {
+	pub fn new(a: Box<dyn DistanceField + Sync>, offset: Vec3) -> Box<Self> {
+		Box::new(Self {
 			a: a,
 			offset: offset
-		}
+		})
 	}
 }
 
