@@ -1,16 +1,20 @@
 #![allow(unused)]
+#![feature(type_alias_enum_variants)]
+
 mod raymarcher;
 use raymarcher::*;
 
 use std::f64::consts::PI;
 const EPSILON: f64 = 0.001;
 
-#[macro_use]
-extern crate impl_ops;
+#[macro_use] extern crate impl_ops;
+#[macro_use] extern crate serde;
 extern crate minifb;
-use minifb::{Key, Window, WindowOptions, MouseMode};
 extern crate rayon;
+
+use minifb::{Key, Window, WindowOptions, MouseMode};
 use rayon::prelude::*;
+use serde::{Serialize, Deserialize, Deserializer};
 
 //Settings
 const MAX_DIST: f64 = 30.0;
@@ -19,22 +23,18 @@ const IMG_HEIGHT: usize = 600;
 const FOV: f64 = 90.0;
 
 fn main() {
-	let scene = Scene {
+    let scene = Scene {
 		shapes: vec![
-            CSG::new(
-                CSGOperator::UnionSmooth(0.25),
-                Transform::new(
-                    Cube::new(
-                        Vec3::new(1.0, 1.0, 1.0)
-                    ),
-                    Mat4::translate(&Vec3::new(0.0, 1.0, 1.2)) * Mat4::rotate_y(1.0)
-                ),
-                Cube::new(
-                    Vec3::new(1.0, 1.0, 1.0)
-                )
-            )
-		]
-	};
+            SceneObject::CSG {
+                a: Box::new(SceneObject::Transform {
+                    a: Box::new(SceneObject::Cube { size: Vec3::new(1.0, 1.0, 1.0) }),
+                    transform: Mat4::translate(&Vec3::new(0.0, 1.0, 1.2)) * Mat4::rotate_y(1.0)
+                }),
+                b: Box::new(SceneObject::Cube { size: Vec3::new(1.0, 1.0, 1.0) }),
+                op: CSGOperator::UnionSmooth(0.25)
+            }
+        ]
+    };
 
 	//Mutable variables
 	let mut cam_orig = Vec3::new(0.0, 1.0, -2.0);

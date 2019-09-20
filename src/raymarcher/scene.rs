@@ -1,8 +1,9 @@
-use super::shapes::DistanceField;
+use super::shapes::{SceneObject, DistanceField};
 use super::Vec3;
 
+#[derive(Serialize, Deserialize)]
 pub struct Scene {
-	pub shapes: Vec<Box<dyn DistanceField + Sync>>
+	pub shapes: Vec<SceneObject>
 }
 
 impl DistanceField for Scene {

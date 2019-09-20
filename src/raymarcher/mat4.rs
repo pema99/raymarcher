@@ -1,7 +1,7 @@
 use std::ops;
 use super::Vec3;
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Mat4 {
 	data: [f64; 16]
 }

@@ -3,9 +3,20 @@ use super::Vec3;
 use super::Mat4;
 const EPSILON: f64 = 0.00001;
 
-pub trait DistanceField{
-	fn sdf(&self, from: &Vec3) -> f64;
-	fn sdf_normal(&self, p: Vec3) -> Vec3 {
+#[derive(Serialize, Deserialize)]
+pub enum SceneObject {
+    Sphere { radius: f64 },
+    Cube { size: Vec3 },
+    Plane { normal: Vec3 },
+    CSG { a: Box<SceneObject>, b: Box<SceneObject>, op: CSGOperator },
+    Transform { a: Box<SceneObject>, transform: Mat4 },
+    Scale { a: Box<SceneObject>, factor: f64 },
+    Repeat { a: Box<SceneObject>, period: Vec3 }
+}
+
+pub trait DistanceField {
+    fn sdf(&self, from: &Vec3) -> f64;
+    fn sdf_normal(&self, p: Vec3) -> Vec3 {
 		Vec3::new(
 			self.sdf(&Vec3::new(p.x + EPSILON, p.y, p.z)) - self.sdf(&Vec3::new(p.x - EPSILON, p.y, p.z)),
 			self.sdf(&Vec3::new(p.x, p.y + EPSILON, p.z)) - self.sdf(&Vec3::new(p.x, p.y - EPSILON, p.z)),
@@ -14,62 +25,35 @@ pub trait DistanceField{
 	}
 }
 
-pub struct Sphere {
-	radius: f64
+impl DistanceField for SceneObject {
+    fn sdf(&self, from: &Vec3) -> f64 {
+        match self {
+            Self::Sphere { radius } => sphere_sdf(from, *radius),
+            Self::Cube { size } => cube_sdf(from, size),
+            Self::Plane { normal } => plane_sdf(from, normal),
+            Self::CSG { a, b, op } => csg_sdf(from, a, b, op),
+            Self::Transform { a, transform } => transform_sdf(from, a, transform),
+            Self::Scale { a, factor } => scale_sdf(from, a, *factor),
+            Self::Repeat { a, period } => repeat_sdf(from, a, period)
+        }
+    }
 }
 
-impl Sphere {
-	pub fn new(radius: f64) -> Box<Self> {
-		Box::new(Self {
-			radius: radius
-		})
-	}
+fn sphere_sdf(from: &Vec3, radius: f64) -> f64 {
+    from.magnitude() - radius
 }
 
-impl DistanceField for Sphere {
-	fn sdf(&self, from: &Vec3) -> f64 {
-		from.magnitude() - self.radius
-	}
+fn cube_sdf(from: &Vec3, size: &Vec3) -> f64 {
+    let diff = from.abs() - size;
+    diff.max(0.0).magnitude()
+    // + diff.x.max(diff.y.max(diff.z)).min(0.0)
 }
 
-pub struct Cube {
-	size: Vec3
+fn plane_sdf(from: &Vec3, normal: &Vec3) -> f64 {
+    from.dot(normal)
 }
 
-impl Cube {
-	pub fn new(size: Vec3) -> Box<Self> {
-		Box::new(Self {
-			size: size
-		})
-	}
-}
-
-impl DistanceField for Cube {
-	fn sdf(&self, from: &Vec3) -> f64 {
-		let diff = from.abs() - self.size;
-		diff.max(0.0).magnitude()
-		// + diff.x.max(diff.y.max(diff.z)).min(0.0)
-	}
-}
-
-pub struct Plane {
-	normal: Vec3
-}
-
-impl Plane {
-	pub fn new(normal: Vec3) -> Box<Self> {
-		Box::new(Self {
-			normal: normal
-		})
-	}
-}
-
-impl DistanceField for Plane {
-	fn sdf(&self, from: &Vec3) -> f64 {
-		from.dot(&self.normal)
-	}
-}
-
+#[derive(Serialize, Deserialize)]
 pub enum CSGOperator {
 	Union,
 	Intersect,
@@ -79,97 +63,31 @@ pub enum CSGOperator {
 	DifferenceSmooth(f64)
 }
 
-pub struct CSG {
-	a: Box<dyn DistanceField + Sync>,
-	b: Box<dyn DistanceField + Sync>,
-	op: CSGOperator
+fn csg_sdf(from: &Vec3, a: &SceneObject, b: &SceneObject, op: &CSGOperator) -> f64 {
+    match op {
+        CSGOperator::Union => a.sdf(&from).min(b.sdf(&from)),
+        CSGOperator::Intersect => a.sdf(&from).max(b.sdf(&from)),
+        CSGOperator::Difference => a.sdf(&from).max(-b.sdf(&from)),
+        CSGOperator::UnionSmooth(k) => min_smooth(a.sdf(&from), b.sdf(&from), *k),
+        CSGOperator::IntersectSmooth(k) => max_smooth(a.sdf(&from), b.sdf(&from), *k),
+        CSGOperator::DifferenceSmooth(k) => difference_smooth(a.sdf(&from), b.sdf(&from), *k),
+        _ => 0.0
+    }
 }
 
-impl CSG {
-	pub fn new(op: CSGOperator, a: Box<dyn DistanceField + Sync>, b: Box<dyn DistanceField + Sync>) -> Box<Self> {
-		Box::new(Self {
-			a: a,
-			b: b,
-			op: op
-		})
-	}
+fn transform_sdf(from: &Vec3, a: &SceneObject, transform: &Mat4) -> f64 {
+    a.sdf(&(transform * from))
 }
 
-impl DistanceField for CSG {
-	fn sdf(&self, from: &Vec3) -> f64 {
-		match self.op {
-			CSGOperator::Union => self.a.sdf(&from).min(self.b.sdf(&from)),
-			CSGOperator::Intersect => self.a.sdf(&from).max(self.b.sdf(&from)),
-			CSGOperator::Difference => self.a.sdf(&from).max(-self.b.sdf(&from)),
-			CSGOperator::UnionSmooth(k) => min_smooth(self.a.sdf(&from), self.b.sdf(&from), k),
-			CSGOperator::IntersectSmooth(k) => max_smooth(self.a.sdf(&from), self.b.sdf(&from), k),
-			CSGOperator::DifferenceSmooth(k) => difference_smooth(self.a.sdf(&from), self.b.sdf(&from), k),
-			_ => 0.0
-		}
-	}
+fn scale_sdf(from: &Vec3, a: &SceneObject, factor: f64) -> f64 {
+    a.sdf(&(from / factor)) * factor
 }
 
-pub struct Transform {
-    a: Box<dyn DistanceField + Sync>,
-	transform: Mat4
-}
-
-impl Transform {
-	pub fn new(a: Box<dyn DistanceField + Sync>, transform: Mat4) -> Box<Self> {
-		Box::new(Self {
-			a: a,
-			transform: transform.invert()
-		})
-	}
-}
-
-impl DistanceField for Transform {
-	fn sdf(&self, from: &Vec3) -> f64 {
-        self.a.sdf(&(self.transform * from))
-	}
-}
-
-pub struct Scale {
-    a: Box<dyn DistanceField + Sync>,
-	factor: f64
-}
-
-impl Scale {
-	pub fn new(a: Box<dyn DistanceField + Sync>, factor: f64) -> Box<Self> {
-		Box::new(Self {
-			a: a,
-			factor: factor
-		})
-	}
-}
-
-impl DistanceField for Scale {
-	fn sdf(&self, from: &Vec3) -> f64 {
-        self.a.sdf(&(from / self.factor)) * self.factor
-	}
-}
-
-pub struct DomainRepetition {
-	a: Box<dyn DistanceField + Sync>,
-	offset: Vec3
-}
-
-impl DomainRepetition {
-	pub fn new(a: Box<dyn DistanceField + Sync>, offset: Vec3) -> Box<Self> {
-		Box::new(Self {
-			a: a,
-			offset: offset
-		})
-	}
-}
-
-impl DistanceField for DomainRepetition {
-	fn sdf(&self, from: &Vec3) -> f64 {
-		let trans = Vec3::new(
-    		from.x.abs() % self.offset.x,
-    		from.y.abs() % self.offset.y,
-    		from.z.abs() % self.offset.z)
-    		- 0.5 * self.offset;
-    	self.a.sdf(&trans)
-	}
+fn repeat_sdf(from: &Vec3, a: &SceneObject, period: &Vec3) -> f64 {
+    let trans = Vec3::new(
+        from.x.abs() % period.x,
+        from.y.abs() % period.y,
+        from.z.abs() % period.z)
+        - 0.5 * period;
+    a.sdf(&trans)
 }
